@@ -28,6 +28,7 @@ int _mosquitto_log_printf(struct mosquitto *mosq, int priority, const char *fmt,
 	char *s;
 	int len;
 
+	printf("lib/logging_mosq.c: _mosquitto_log_printf -- %s\n",fmt);
 	assert(mosq);
 	assert(fmt);
 

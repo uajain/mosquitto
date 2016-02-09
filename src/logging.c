@@ -256,6 +256,7 @@ int _mosquitto_log_printf(struct mosquitto *mosq, int priority, const char *fmt,
 	va_list va;
 	int rc;
 
+	printf("src/logging.c:_mosquitto_log_printf -- %s\n", fmt);
 	va_start(va, fmt);
 	rc = _mosquitto_log_vprintf(mosq, priority, fmt, va);
 	va_end(va);
