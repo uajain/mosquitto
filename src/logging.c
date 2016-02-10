@@ -29,6 +29,11 @@ Contributors:
 #include <memory_mosq.h>
 #include <util_mosq.h>
 
+/* struct mosquitto defined in "mosquitto_broker.h"
+ * It looks like this particular struct
+ * encapsulates all other "major" structs
+ * for providing common interface access to functions.
+ */
 extern struct mosquitto_db int_db;
 
 #ifdef WIN32
@@ -55,6 +60,9 @@ int mqtt3_log_init(struct mqtt3_config *config)
 	int rc = 0;
 
 	log_priorities = config->log_type;
+	/* Logs can be disabled by "log_dest none" in mosquitto.conf
+	 * Therefore in every IF condition is log_dest is enabled
+	 */
 	log_destinations = config->log_dest;
 
 	if(log_destinations & MQTT3_LOG_SYSLOG){
@@ -101,6 +109,8 @@ int mqtt3_log_close(struct mqtt3_config *config)
 
 int _mosquitto_log_vprintf(struct mosquitto *mosq, int priority, const char *fmt, va_list va)
 {
+	/*s = resulting string of va_list, see vsnprintf*/
+	/*st = s with timestamp*/
 	char *s;
 	char *st;
 	int len;
@@ -112,6 +122,9 @@ int _mosquitto_log_vprintf(struct mosquitto *mosq, int priority, const char *fmt
 	time_t now = time(NULL);
 	static time_t last_flush = 0;
 
+	/* if log_dest is "topic", logs will end up in broker topic:
+	 * '$SYS/broker/log/<severity>' | <severity> : syslog_priority
+	 * Below this point, we initialize the <severity> for further usage. @ line #251*/
 	if((log_priorities & priority) && log_destinations != MQTT3_LOG_NONE){
 		switch(priority){
 			case MOSQ_LOG_SUBSCRIBE:
@@ -193,8 +206,13 @@ int _mosquitto_log_vprintf(struct mosquitto *mosq, int priority, const char *fmt
 		if(!s) return MOSQ_ERR_NOMEM;
 
 		vsnprintf(s, len, fmt, va);
+		/* fmt = formatted printf string.
+		 * len = max no. of bytes to be used in buffer
+		 * s   = pointer to the buffer where resulting C string is stored
+		 */
 		s[len-1] = '\0'; /* Ensure string is null terminated. */
 
+		/* mosquitto.conf = log_dest stdout*/
 		if(log_destinations & MQTT3_LOG_STDOUT){
 			if(int_db.config && int_db.config->log_timestamp){
 				fprintf(stdout, "%d: %s\n", (int)now, s);
@@ -203,6 +221,7 @@ int _mosquitto_log_vprintf(struct mosquitto *mosq, int priority, const char *fmt
 			}
 			fflush(stdout);
 		}
+		/* mosquitto.conf = log_dest stderr*/
 		if(log_destinations & MQTT3_LOG_STDERR){
 			if(int_db.config && int_db.config->log_timestamp){
 				fprintf(stderr, "%d: %s\n", (int)now, s);
@@ -211,6 +230,7 @@ int _mosquitto_log_vprintf(struct mosquitto *mosq, int priority, const char *fmt
 			}
 			fflush(stderr);
 		}
+		/* mosquitto.conf = log_dest file file_path*/
 		if(log_destinations & MQTT3_LOG_FILE && int_db.config->log_fptr){
 			if(int_db.config && int_db.config->log_timestamp){
 				fprintf(int_db.config->log_fptr, "%d: %s\n", (int)now, s);
@@ -222,6 +242,7 @@ int _mosquitto_log_vprintf(struct mosquitto *mosq, int priority, const char *fmt
 				last_flush = now;
 			}
 		}
+		/* mosquitto.conf = log_dest syslog (log end up in dir like /var/log/..) */
 		if(log_destinations & MQTT3_LOG_SYSLOG){
 #ifndef WIN32
 			syslog(syslog_priority, "%s", s);
@@ -230,7 +251,14 @@ int _mosquitto_log_vprintf(struct mosquitto *mosq, int priority, const char *fmt
 			ReportEvent(syslog_h, syslog_priority, 0, 0, NULL, 1, 0, &sp, NULL);
 #endif
 		}
+		/* mosquitto.conf = log_dest topic ($SYS hierarchy) */
 		if(log_destinations & MQTT3_LOG_TOPIC && priority != MOSQ_LOG_DEBUG){
+			/* why (priority != MOSQ_LOG_DEBUG) ?
+			 * Logic dictates that $SYS hierarchy is allowed to be accessed by subscribers.
+			 * We are OK publishing the logs about the INFO, WARNING, ERROR, NOTICE etc.
+			 * However, we should prevent subcribers from accessing **debugging logs** internal to
+			 * broker. Still not sure about the logic -- see: GET REVIEWED
+			 */
 			if(int_db.config && int_db.config->log_timestamp){
 				len += 30;
 				st = _mosquitto_malloc(len*sizeof(char));
@@ -239,6 +267,7 @@ int _mosquitto_log_vprintf(struct mosquitto *mosq, int priority, const char *fmt
 					return MOSQ_ERR_NOMEM;
 				}
 				snprintf(st, len, "%d: %s", (int)now, s);
+				/*st now contains timestamp (int now) append with s, see %d : %s*/
 				mqtt3_db_messages_easy_queue(&int_db, NULL, topic, 2, strlen(st), st, 0);
 				_mosquitto_free(st);
 			}else{
@@ -252,10 +281,15 @@ int _mosquitto_log_vprintf(struct mosquitto *mosq, int priority, const char *fmt
 }
 
 int _mosquitto_log_printf(struct mosquitto *mosq, int priority, const char *fmt, ...)
-{
+{	/* Varidiac Functions - Functions accepting variable no. of args
+	 * ... defines variabilty which can be captured thorugh va_list
+	 * Therefore, when calling of this function, any #args can be passed
+	 * and those args constitutes the va_list.
+	 * To output/log va_list values, we might need a formatted string - fmt
+	 */
 	va_list va;
 	int rc;
-
+	/*Prints the formatted string to be used by vsnprintf*/
 	printf("src/logging.c:_mosquitto_log_printf -- %s\n", fmt);
 	va_start(va, fmt);
 	rc = _mosquitto_log_vprintf(mosq, priority, fmt, va);

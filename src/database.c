@@ -505,7 +505,7 @@ int mqtt3_db_messages_delete(struct mosquitto_db *db, struct mosquitto *context)
 }
 
 int mqtt3_db_messages_easy_queue(struct mosquitto_db *db, struct mosquitto *context, const char *topic, int qos, uint32_t payloadlen, const void *payload, int retain)
-{
+{	/*What is context here ? Next step research*/
 	struct mosquitto_msg_store *stored;
 	char *source_id;
 
