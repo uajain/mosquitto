@@ -22,7 +22,7 @@ Contributors:
 #include <util_mosq.h>
 
 int _mosquitto_send_connack(struct mosquitto *context, int ack, int result)
-{
+{	printf("Starting connack\n");
 	struct _mosquitto_packet *packet = NULL;
 	int rc;
 
@@ -46,7 +46,7 @@ int _mosquitto_send_connack(struct mosquitto *context, int ack, int result)
 	}
 	packet->payload[packet->pos+0] = ack;
 	packet->payload[packet->pos+1] = result;
-
+	printf("Ending connack\n");
 	return _mosquitto_packet_queue(context, packet);
 }
 

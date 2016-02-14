@@ -153,7 +153,7 @@ int _mosquitto_send_publish(struct mosquitto *mosq, uint16_t mid, const char *to
 						_mosquitto_free(mapped_topic);
 						mapped_topic = topic_temp;
 					}
-					_mosquitto_log_printf(NULL, MOSQ_LOG_DEBUG, "Sending PUBLISH to %s (d%d, q%d, r%d, m%d, '%s', ... (%ld bytes))", mosq->id, dup, qos, retain, mid, mapped_topic, (long)payloadlen);
+					_mosquitto_log_printf(NULL, MOSQ_LOG_DEBUG, "Sending PUBLISH to %s (d%d, q%d, r%d, m%d, '%s', %s (%ld bytes))", mosq->id, dup, qos, retain, mid, mapped_topic, payload, (long)payloadlen);
 #ifdef WITH_SYS_TREE
 					g_pub_bytes_sent += payloadlen;
 #endif
@@ -165,7 +165,7 @@ int _mosquitto_send_publish(struct mosquitto *mosq, uint16_t mid, const char *to
 		}
 	}
 #endif
-	_mosquitto_log_printf(NULL, MOSQ_LOG_DEBUG, "Sending PUBLISH to %s (d%d, q%d, r%d, m%d, '%s', ... (%ld bytes))", mosq->id, dup, qos, retain, mid, topic, (long)payloadlen);
+	_mosquitto_log_printf(NULL, MOSQ_LOG_DEBUG, "Sending PUBLISH to %s (d%d, q%d, r%d, m%d, '%s', %s (%ld bytes))", mosq->id, dup, qos, retain, mid, topic, payload, (long)payloadlen);
 #  ifdef WITH_SYS_TREE
 	g_pub_bytes_sent += payloadlen;
 #  endif

@@ -326,6 +326,7 @@ int mqtt3_config_parse_args(struct mqtt3_config *config, int argc, char *argv[])
 	int port_tmp;
 
 	for(i=1; i<argc; i++){
+		/*Populate the config struct from the config file*/
 		if(!strcmp(argv[i], "-c") || !strcmp(argv[i], "--config-file")){
 			if(i<argc-1){
 				config->config_file = _mosquitto_strdup(argv[i+1]);

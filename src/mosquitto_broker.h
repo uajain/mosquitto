@@ -240,7 +240,7 @@ struct _mosquitto_auth_plugin{
 
 struct mosquitto_db{
 	dbid_t last_db_id;
-	struct _mosquitto_subhier subs;
+	struct _mosquitto_subhier subs;//sub hierarchies?
 	struct _mosquitto_unpwd *unpwd;
 	struct _mosquitto_acl_user *acl_list;
 	struct _mosquitto_acl *acl_patterns;

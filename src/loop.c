@@ -355,7 +355,7 @@ int mosquitto_main_loop(struct mosquitto_db *db, mosq_sock_t *listensock, int li
 			flag_db_backup = false;
 		}
 #endif
-		if(flag_reload){
+		if(flag_reload){ /*Reloading config file on the fly? Reacts to trigger SIGHUP */
 			_mosquitto_log_printf(NULL, MOSQ_LOG_INFO, "Reloading config.");
 			mqtt3_config_read(db->config, true);
 			mosquitto_security_cleanup(db, true);

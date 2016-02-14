@@ -233,7 +233,9 @@ int _mosquitto_log_vprintf(struct mosquitto *mosq, int priority, const char *fmt
 		/* mosquitto.conf = log_dest file file_path*/
 		if(log_destinations & MQTT3_LOG_FILE && int_db.config->log_fptr){
 			if(int_db.config && int_db.config->log_timestamp){
-				fprintf(int_db.config->log_fptr, "%d: %s\n", (int)now, s);
+				char *time_readable = asctime(gmtime(&now));
+				time_readable[strlen(time_readable)-1] = '\0';
+				fprintf(int_db.config->log_fptr, "%s : %s\n", time_readable, s);
 			}else{
 				fprintf(int_db.config->log_fptr, "%s\n", s);
 			}
@@ -289,8 +291,8 @@ int _mosquitto_log_printf(struct mosquitto *mosq, int priority, const char *fmt,
 	 */
 	va_list va;
 	int rc;
-	/*Prints the formatted string to be used by vsnprintf*/
-	printf("src/logging.c:_mosquitto_log_printf -- %s\n", fmt);
+	/* DEBUG: Prints the formatted string to be used by vsnprintf*/
+	/*printf("src/logging.c:_mosquitto_log_printf -- %s\n", fmt);*/
 	va_start(va, fmt);
 	rc = _mosquitto_log_vprintf(mosq, priority, fmt, va);
 	va_end(va);

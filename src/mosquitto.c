@@ -200,7 +200,7 @@ int main(int argc, char *argv[])
 	char err[256];
 	struct timeval tv;
 #endif
-	struct mosquitto *ctxt, *ctxt_tmp;
+	struct mosquitto *ctxt, *ctxt_tmp; /*struct mosquitto defined in mosquitto_internals.h*/
 
 #if defined(WIN32) || defined(__CYGWIN__)
 	if(argc == 2){
@@ -238,6 +238,10 @@ int main(int argc, char *argv[])
 	if(config.daemon){
 #ifndef WIN32
 		switch(fork()){
+			/*New thread fork() returns 0 to child process
+			 * Child process executes just from the next
+			 * line itself
+			 */
 			case 0:
 				break;
 			case -1:
@@ -253,7 +257,11 @@ int main(int argc, char *argv[])
 	}
 
 	if(config.daemon && config.pid_file){
-		pid = _mosquitto_fopen(config.pid_file, "wt");
+		/*A Pid-File is a file containing the process identification number (pid)
+		 *that is stored in a well-defined location of the filesystem thus allowing
+		 *other programs to find out the pid of a running script.
+		 */
+		pid = _mosquitto_fopen(config.pid_file, "wt");// write pid to the file.
 		if(pid){
 			fprintf(pid, "%d", getpid());
 			fclose(pid);
@@ -362,9 +370,9 @@ int main(int argc, char *argv[])
 	}
 #endif
 
-	run = 1;
+	run = 1;/*This the function that keeps the mosquitto alive*/
 	rc = mosquitto_main_loop(&int_db, listensock, listensock_count, listener_max);
-
+	// Start cleaning up
 	_mosquitto_log_printf(NULL, MOSQ_LOG_INFO, "mosquitto version %s terminating", VERSION);
 	mqtt3_log_close(&config);
 

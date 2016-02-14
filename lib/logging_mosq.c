@@ -27,8 +27,8 @@ int _mosquitto_log_printf(struct mosquitto *mosq, int priority, const char *fmt,
 	va_list va;
 	char *s;
 	int len;
-
-	printf("lib/logging_mosq.c: _mosquitto_log_printf -- %s\n",fmt);
+	/*DEBUG: Prints the formatted string to be used by vsnprintf*/
+	/*printf("lib/logging_mosq.c: _mosquitto_log_printf -- %s\n",fmt);*/
 	assert(mosq);
 	assert(fmt);
 
