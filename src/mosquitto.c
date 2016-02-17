@@ -304,9 +304,10 @@ int main(int argc, char *argv[])
 
 	listener_max = -1;
 	listensock_index = 0;
-	for(i=0; i<config.listener_count; i++){
+	for(i=0; i<config.listener_count; i++)
+	{
 		if(config.listeners[i].protocol == mp_mqtt){
-			if(mqtt3_socket_listen(&config.listeners[i])){
+			if(mqtt3_socket_listen(&config.listeners[i])){ //Beaware: 0 in sucess,1 on failure
 				mqtt3_db_close(&int_db);
 				if(config.pid_file){
 					remove(config.pid_file);

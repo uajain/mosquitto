@@ -338,7 +338,7 @@ int mqtt3_socket_listen(struct _mqtt3_listener *listener)
 	char buf[256];
 
 	if(!listener) return MOSQ_ERR_INVAL;
-
+	printf("Listening on port .... %d\n",listener->port);
 	snprintf(service, 10, "%d", listener->port);
 	memset(&hints, 0, sizeof(struct addrinfo));
 	hints.ai_family = PF_UNSPEC;

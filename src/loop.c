@@ -77,7 +77,7 @@ static void temp__expire_websockets_clients(struct mosquitto_db *db)
 						}else{
 							id = "<unknown>";
 						}
-						_mosquitto_log_printf(NULL, MOSQ_LOG_NOTICE, "Client %s has exceeded timeout, disconnecting.", id);
+						_mosquitto_log_printf (NULL, MOSQ_LOG_NOTICE, "Client %s has exceeded timeout, disconnecting.", id);
 					}
 					/* Client has exceeded keepalive*1.5 */
 					do_disconnect(db, context);
@@ -89,8 +89,12 @@ static void temp__expire_websockets_clients(struct mosquitto_db *db)
 }
 #endif
 
-int mosquitto_main_loop(struct mosquitto_db *db, mosq_sock_t *listensock, int listensock_count, int listener_max)
-{
+int mosquitto_main_loop(struct mosquitto_db *db,/*acts like singleton*/	
+						mosq_sock_t *listensock,
+						int listensock_count,/*#listeners ()*ip:port combo*/
+						int listener_max)
+{												 
+																			
 #ifdef WITH_SYS_TREE
 	time_t start_time = mosquitto_time();
 #endif
@@ -106,6 +110,9 @@ int mosquitto_main_loop(struct mosquitto_db *db, mosq_sock_t *listensock, int li
 	sigset_t sigblock, origsig;
 #endif
 	int i;
+	/*Array of file decriptors for I/O. See realloc below.. This will create memory
+	 *blocks acting as array. 
+	 */
 	struct pollfd *pollfds = NULL;
 	int pollfd_count = 0;
 	int pollfd_index;
@@ -128,6 +135,7 @@ int mosquitto_main_loop(struct mosquitto_db *db, mosq_sock_t *listensock, int li
 	}
 
 	while(run){
+		//printf("Running main loop\n");
 		mosquitto__free_disused_contexts(db);
 #ifdef WITH_SYS_TREE
 		if(db->config->sys_interval > 0){
@@ -140,29 +148,56 @@ int mosquitto_main_loop(struct mosquitto_db *db, mosq_sock_t *listensock, int li
 		context_count += db->bridge_count;
 #endif
 
-		if(listensock_count + context_count > pollfd_count || !pollfds){
-			pollfd_count = listensock_count + context_count;
-			pollfds = _mosquitto_realloc(pollfds, sizeof(struct pollfd)*pollfd_count);
-			if(!pollfds){
-				_mosquitto_log_printf(NULL, MOSQ_LOG_ERR, "Error: Out of memory.");
-				return MOSQ_ERR_NOMEM;
-			}
-		}
+	  /* Connecting clients logic here
+       * pollfd_count is no. of clients connected
+       * listensock_count + context_count = existing clients + new clients
+       * If its>pollfd_count realloc memory for them
+       */
+      if (listensock_count + context_count > pollfd_count || !pollfds)
+	{
+	  pollfd_count = listensock_count + context_count;
+	  /*total memory required = pollfd (one client memory)xtotal clients*/	
+	  pollfds = _mosquitto_realloc (pollfds, sizeof (struct pollfd) * pollfd_count);
 
-		memset(pollfds, -1, sizeof(struct pollfd)*pollfd_count);
+	  if (!pollfds)
+	    {
+	      _mosquitto_log_printf (NULL, MOSQ_LOG_ERR,
+				     "Error: Out of memory.");
+	      return MOSQ_ERR_NOMEM;
+	    }
+	}
+	 /*-1 fill the memory block*/
+      memset (pollfds, -1, sizeof (struct pollfd) * pollfd_count);
+
 
 		pollfd_index = 0;
+		/*Number of clients = No. of elements in "pollfds array"
+		 *This loop specifies if any data is to be read ("POLLIN")
+		 * Now this is subscriber thing or publihser thing is the question?
+		 */
+		 //printf("Listen socket count = %d\n",listensock_count );
 		for(i=0; i<listensock_count; i++){
+			/*The number of pollfd structures in the fds array is specified by nfds.*/
 			pollfds[pollfd_index].fd = listensock[i];
 			pollfds[pollfd_index].events = POLLIN;
 			pollfds[pollfd_index].revents = 0;
+			// printf("pollfds[pollfd_index].fd = %d \n",pollfds[pollfd_index].fd );
+			// printf("pollfds[pollfd_index].events = %d \n",pollfds[pollfd_index].events );
+			// printf("pollfds[pollfd_index].revents = %d \n",pollfds[pollfd_index].revents );
+			// printf("pollfd_index : %d\n", pollfd_index);
 			pollfd_index++;
 		}
 
 		now_time = time(NULL);
 
 		time_count = 0;
-		HASH_ITER(hh_sock, db->contexts_by_sock, context, ctxt_tmp){
+		/* I am afraid of HASHes and HASH_ITER. see uthash.h
+		 * Also #times HASH_ITER exeutes is equal to #clients
+		 * subcriber are connected.see #145 for reference. 
+		 */
+		
+		HASH_ITER(hh_sock, db->contexts_by_sock, context, ctxt_tmp)
+		{	//printf("in hash iter\n");
 			if(time_count > 0){
 				time_count--;
 			}else{
@@ -172,28 +207,33 @@ int mosquitto_main_loop(struct mosquitto_db *db, mosq_sock_t *listensock, int li
 			context->pollfd_index = -1;
 
 			if(context->sock != INVALID_SOCKET){
-#ifdef WITH_BRIDGE
+		 #ifdef WITH_BRIDGE
 				if(context->bridge){
 					_mosquitto_check_keepalive(db, context);
 					if(context->bridge->round_robin == false
 							&& context->bridge->cur_address != 0
 							&& now > context->bridge->primary_retry){
 
-						if(_mosquitto_try_connect(context, context->bridge->addresses[0].address, context->bridge->addresses[0].port, &bridge_sock, NULL, false) <= 0){
+						if(_mosquitto_try_connect(context, context->bridge->addresses[0].address, 
+									context->bridge->addresses[0].port, 
+									&bridge_sock, NULL, false) <= 0)
+						{
 							COMPAT_CLOSE(bridge_sock);
 							_mosquitto_socket_close(db, context);
 							context->bridge->cur_address = context->bridge->address_count-1;
 						}
 					}
 				}
-#endif
+		 #endif
 
 				/* Local bridges never time out in this fashion. */
 				if(!(context->keepalive)
 						|| context->bridge
 						|| now - context->last_msg_in < (time_t)(context->keepalive)*3/2){
-
+					/*Important: Handles publishing of messages.*/
 					if(mqtt3_db_message_write(db, context) == MOSQ_ERR_SUCCESS){
+						/*This does not make sense. value of pollfd_index ???
+						 */
 						pollfds[pollfd_index].fd = context->sock;
 						pollfds[pollfd_index].events = POLLIN;
 						pollfds[pollfd_index].revents = 0;
@@ -202,7 +242,7 @@ int mosquitto_main_loop(struct mosquitto_db *db, mosq_sock_t *listensock, int li
 						}
 						context->pollfd_index = pollfd_index;
 						pollfd_index++;
-					}else{
+					}else{ // something bad happened, client not available?
 						do_disconnect(db, context);
 					}
 				}else{
@@ -316,7 +356,7 @@ int mosquitto_main_loop(struct mosquitto_db *db, mosq_sock_t *listensock, int li
 
 #ifndef WIN32
 		sigprocmask(SIG_SETMASK, &sigblock, &origsig);
-		fdcount = poll(pollfds, pollfd_index, 100);
+		fdcount = poll(pollfds, pollfd_index, 100);//segregates the fds which are ready for IO by setting revents flag
 		sigprocmask(SIG_SETMASK, &origsig, NULL);
 #else
 		fdcount = WSAPoll(pollfds, pollfd_index, 100);
@@ -324,7 +364,7 @@ int mosquitto_main_loop(struct mosquitto_db *db, mosq_sock_t *listensock, int li
 		if(fdcount == -1){
 			loop_handle_errors(db, pollfds);
 		}else{
-			loop_handle_reads_writes(db, pollfds);
+			loop_handle_reads_writes(db, pollfds);//it will read/write data from pollfds based on their revent value
 
 			for(i=0; i<listensock_count; i++){
 				if(pollfds[i].revents & (POLLIN | POLLPRI)){
@@ -355,7 +395,7 @@ int mosquitto_main_loop(struct mosquitto_db *db, mosq_sock_t *listensock, int li
 			flag_db_backup = false;
 		}
 #endif
-		if(flag_reload){ /*Reloading config file on the fly? Reacts to trigger SIGHUP */
+		if(flag_reload){ /*Reloading config file on the fly? Reacts to SIGHUP signal*/
 			_mosquitto_log_printf(NULL, MOSQ_LOG_INFO, "Reloading config.");
 			mqtt3_config_read(db->config, true);
 			mosquitto_security_cleanup(db, true);
@@ -460,7 +500,11 @@ static void loop_handle_reads_writes(struct mosquitto_db *db, struct pollfd *pol
 	struct mosquitto *context, *ctxt_tmp;
 	int err;
 	socklen_t len;
-
+	
+	static int tester = 0;
+	tester++;
+	//printf("loop_handle_reads_writes : function called %d times\n", tester);
+	
 	HASH_ITER(hh_sock, db->contexts_by_sock, context, ctxt_tmp){
 		if(context->pollfd_index < 0){
 			continue;
@@ -470,30 +514,33 @@ static void loop_handle_reads_writes(struct mosquitto_db *db, struct pollfd *pol
 #ifdef WITH_TLS
 		if(pollfds[context->pollfd_index].revents & POLLOUT ||
 				context->want_write ||
-				(context->ssl && context->state == mosq_cs_new)){
+				(context->ssl && context->state == mosq_cs_new))
+		{
 #else
-		if(pollfds[context->pollfd_index].revents & POLLOUT){
+			if(pollfds[context->pollfd_index].revents & POLLOUT)
+			{	//This means that the fd is ready for "Writing" so we do _mosquitto_packet_write
 #endif
-			if(context->state == mosq_cs_connect_pending){
-				len = sizeof(int);
-				if(!getsockopt(context->sock, SOL_SOCKET, SO_ERROR, (char *)&err, &len)){
-					if(err == 0){
-						context->state = mosq_cs_new;
+				if(context->state == mosq_cs_connect_pending){
+					len = sizeof(int);
+					if(!getsockopt(context->sock, SOL_SOCKET, SO_ERROR, (char *)&err, &len)){
+						if(err == 0){
+							context->state = mosq_cs_new;
+						}
+					}else{
+						do_disconnect(db, context);
+						continue;
 					}
-				}else{
+				}
+				if(_mosquitto_packet_write(context)){ //defined in net_mosq.c
 					do_disconnect(db, context);
+					printf("------------------No more packet writing-------------\n");
 					continue;
 				}
 			}
-			if(_mosquitto_packet_write(context)){
-				do_disconnect(db, context);
-				continue;
-			}
 		}
-	}
-
+	/**/
 	HASH_ITER(hh_sock, db->contexts_by_sock, context, ctxt_tmp){
-		if(context->pollfd_index < 0){
+		if(context->pollfd_index < 0){ // first see use of: pollfds[context->pollfd_index].revents below 
 			continue;
 		}
 
@@ -503,9 +550,11 @@ static void loop_handle_reads_writes(struct mosquitto_db *db, struct pollfd *pol
 #else
 		if(pollfds[context->pollfd_index].revents & POLLIN){
 #endif
-			do{
+			do{	// if the client is set to POLLIN, keep reading the packets
 				if(_mosquitto_packet_read(db, context)){
 					do_disconnect(db, context);
+					/*For now, this executes when a client (mosquitto_sub disconnects)*/
+					printf("---------------Subscriber is DISCONNECTED-------------------\n");
 					continue;
 				}
 			}while(SSL_DATA_PENDING(context));

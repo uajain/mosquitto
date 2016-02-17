@@ -749,6 +749,11 @@ ssize_t _mosquitto_net_write(struct mosquitto *mosq, void *buf, size_t count)
 
 int _mosquitto_packet_write(struct mosquitto *mosq)
 {
+	static int publish = 0;
+	static int tester = 0;
+	tester++;
+	printf("_mosquitto_packet_>>write<< called %d times\n", tester);
+
 	ssize_t write_length;
 	struct _mosquitto_packet *packet;
 
@@ -757,13 +762,20 @@ int _mosquitto_packet_write(struct mosquitto *mosq)
 
 	pthread_mutex_lock(&mosq->current_out_packet_mutex);
 	pthread_mutex_lock(&mosq->out_packet_mutex);
-	if(mosq->out_packet && !mosq->current_out_packet){
+	
+	if(mosq->out_packet && !mosq->current_out_packet)
+	{
+		/*Technical details will be required here. What is the difference between
+		 *current out packet and out packet ? However it does not seem important 
+		 *at this point of time
+		 */
 		mosq->current_out_packet = mosq->out_packet;
 		mosq->out_packet = mosq->out_packet->next;
-		if(!mosq->out_packet){
+		
+		if(!mosq->out_packet)
 			mosq->out_packet_last = NULL;
-		}
 	}
+	
 	pthread_mutex_unlock(&mosq->out_packet_mutex);
 
 	if(mosq->state == mosq_cs_connect_pending){
@@ -809,8 +821,9 @@ int _mosquitto_packet_write(struct mosquitto *mosq)
 		}
 #  endif
 #else
-		if(((packet->command)&0xF6) == PUBLISH){
+		if(((packet->command)&0xF6) == PUBLISH){ //masking header gives us PUBLISH command then..
 			pthread_mutex_lock(&mosq->callback_mutex);
+			printf("_mosquitto_packet_write:^^^publish^^^ called %d times\n",publish );
 			if(mosq->on_publish){
 				/* This is a QoS=0 message */
 				mosq->in_callback = true;
@@ -818,7 +831,7 @@ int _mosquitto_packet_write(struct mosquitto *mosq)
 				mosq->in_callback = false;
 			}
 			pthread_mutex_unlock(&mosq->callback_mutex);
-		}else if(((packet->command)&0xF0) == DISCONNECT){
+		}else if(((packet->command)&0xF0) == DISCONNECT){  //masking header gives us DISCONNECT command then..
 			/* FIXME what cleanup needs doing here? 
 			 * incoming/outgoing messages? */
 			_mosquitto_socket_close(mosq);
@@ -878,6 +891,12 @@ int _mosquitto_packet_write(struct mosquitto *mosq)
 	return MOSQ_ERR_SUCCESS;
 }
 
+void demo_function()
+{
+	printf("Just doing dummy stuff\n");
+}
+
+
 #ifdef WITH_BROKER
 int _mosquitto_packet_read(struct mosquitto_db *db, struct mosquitto *mosq)
 #else
@@ -887,7 +906,9 @@ int _mosquitto_packet_read(struct mosquitto *mosq)
 	uint8_t byte;
 	ssize_t read_length;
 	int rc = 0;
-
+	static int tester = 0;
+	tester++;
+	printf("_mosquitto_packet_**read**  called %d times\n", tester);
 	if(!mosq) return MOSQ_ERR_INVAL;
 	if(mosq->sock == INVALID_SOCKET) return MOSQ_ERR_NO_CONN;
 	if(mosq->state == mosq_cs_connect_pending){

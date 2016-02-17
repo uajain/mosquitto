@@ -808,7 +808,7 @@ int mqtt3_db_message_release(struct mosquitto_db *db, struct mosquitto *context,
 }
 
 int mqtt3_db_message_write(struct mosquitto_db *db, struct mosquitto *context)
-{
+{	_mosquitto_log_printf(NULL, MOSQ_LOG_NOTICE, "Starting mqtt3_db_message_write");
 	int rc;
 	struct mosquitto_client_msg *tail, *last = NULL;
 	uint16_t mid;
@@ -846,6 +846,7 @@ int mqtt3_db_message_write(struct mosquitto_db *db, struct mosquitto *context)
 			switch(tail->state){
 				case mosq_ms_publish_qos0:
 					rc = _mosquitto_send_publish(context, mid, topic, payloadlen, payload, qos, retain, retries);
+					_mosquitto_log_printf(NULL, MOSQ_LOG_NOTICE, "Sending: >>>>>>%s<<<<<<<\n", (char*)payload);
 					if(!rc){
 						_message_remove(db, context, &tail, last);
 					}else{
@@ -929,7 +930,7 @@ int mqtt3_db_message_write(struct mosquitto_db *db, struct mosquitto *context)
 			}
 		}
 	}
-
+	_mosquitto_log_printf(NULL, MOSQ_LOG_NOTICE, "Ending mqtt3_db_message_write");
 	return MOSQ_ERR_SUCCESS;
 }
 

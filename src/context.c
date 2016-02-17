@@ -27,6 +27,8 @@ Contributors:
 
 struct mosquitto *mqtt3_context_init(struct mosquitto_db *db, mosq_sock_t sock)
 {
+	printf("Initializing a context\n");
+	/*Runs when a Subscriber is connected.*/
 	struct mosquitto *context;
 	char address[1024];
 
@@ -54,7 +56,7 @@ struct mosquitto *mqtt3_context_init(struct mosquitto_db *db, mosq_sock_t sock)
 
 	context->in_packet.payload = NULL;
 	_mosquitto_packet_cleanup(&context->in_packet);
-	context->out_packet = NULL;
+	context->out_packet = NULL;			//Difference between out_packet and current_out_packet?
 	context->current_out_packet = NULL;
 
 	context->address = NULL;
@@ -86,7 +88,7 @@ struct mosquitto *mqtt3_context_init(struct mosquitto_db *db, mosq_sock_t sock)
 /*
  * This will result in any outgoing packets going unsent. If we're disconnected
  * forcefully then it is usually an error condition and shouldn't be a problem,
- * but it will mean that CONNACK messages will never get sent for bad protocol
+ * but ift will mean that CONNACK messages will never get sent for bad protocol
  * versions for example.
  */
 void mqtt3_context_cleanup(struct mosquitto_db *db, struct mosquitto *context, bool do_free)
