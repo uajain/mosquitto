@@ -278,6 +278,7 @@ int mqtt3_handle_connect(struct mosquitto_db *db, struct mosquitto *context)
 				goto handle_connect_error;
 			}
 		}
+		_mosquitto_log_printf(NULL, MOSQ_LOG_DEBUG, "Client %s set Last Will and Testament. Topic:\"%s\", Payload: \"%s\" (QoS:%d, retain:%s)", client_id, will_topic, will_payload, will_qos, will_retain?"true":"false");
 	}else{
 		if(context->protocol == mosq_p_mqtt311){
 			if(will_qos != 0 || will_retain != 0){
@@ -513,15 +514,15 @@ int mqtt3_handle_connect(struct mosquitto_db *db, struct mosquitto *context)
 	if(db->config->connection_messages == true){
 		if(context->is_bridge){
 			if(context->username){
-				_mosquitto_log_printf(NULL, MOSQ_LOG_NOTICE, "New bridge connected from %s as %s (c%d, k%d, u'%s').", context->address, client_id, clean_session, context->keepalive, context->username);
+				_mosquitto_log_printf(NULL, MOSQ_LOG_NOTICE, "New bridge connected from %s as %s (clean-session:%s, keep-alive:%s, username:'%s').", context->address, client_id, clean_session?"true":"false", context->keepalive?"true":"false", context->username);
 			}else{
-				_mosquitto_log_printf(NULL, MOSQ_LOG_NOTICE, "New bridge connected from %s as %s (c%d, k%d).", context->address, client_id, clean_session, context->keepalive);
+				_mosquitto_log_printf(NULL, MOSQ_LOG_NOTICE, "New bridge connected from %s as %s (clean-session:%s, keep-alive:%s).", context->address, client_id, clean_session?"true":"false", context->keepalive?"true":"false");
 			}
 		}else{
 			if(context->username){
-				_mosquitto_log_printf(NULL, MOSQ_LOG_NOTICE, "New client connected from %s as %s (c%d, k%d, u'%s').", context->address, client_id, clean_session, context->keepalive, context->username);
+				_mosquitto_log_printf(NULL, MOSQ_LOG_NOTICE, "New client connected from %s:%d as %s (clean-session:%s, keep-alive:%s, username:'%s').", context->address, context->listener->port, client_id, clean_session?"true":"false", context->keepalive?"true":"false", context->username);
 			}else{
-				_mosquitto_log_printf(NULL, MOSQ_LOG_NOTICE, "New client connected from %s as %s (c%d, k%d).", context->address, client_id, clean_session, context->keepalive);
+				_mosquitto_log_printf(NULL, MOSQ_LOG_NOTICE, "New client connected from %s:%d as %s (clean-session:%s, keep-alive:%s).", context->address, context->listener->port, client_id, clean_session?"true":"false", context->keepalive?"true":"false");
 			}
 		}
 	}
@@ -594,7 +595,7 @@ int mqtt3_handle_disconnect(struct mosquitto_db *db, struct mosquitto *context)
 	if(context->in_packet.remaining_length != 0){
 		return MOSQ_ERR_PROTOCOL;
 	}
-	_mosquitto_log_printf(NULL, MOSQ_LOG_DEBUG, "Received DISCONNECT from %s", context->id);
+	//_mosquitto_log_printf(NULL, MOSQ_LOG_DEBUG, "Received DISCONNECT from %s", context->id);
 	if(context->protocol == mosq_p_mqtt311){
 		if((context->in_packet.command&0x0F) != 0x00){
 			do_disconnect(db, context);
@@ -620,7 +621,8 @@ int mqtt3_handle_subscribe(struct mosquitto_db *db, struct mosquitto *context)
 	char *sub_mount;
 
 	if(!context) return MOSQ_ERR_INVAL;
-	_mosquitto_log_printf(NULL, MOSQ_LOG_DEBUG, "Received SUBSCRIBE from %s", context->id);
+	/*better to print subscribe event @722*/
+	//_mosquitto_log_printf(NULL, MOSQ_LOG_DEBUG, "Received SUBSCRIBE from %s", context->id);
 	/* FIXME - plenty of potential for memory leaks here */
 
 	if(context->protocol == mosq_p_mqtt311){
@@ -680,7 +682,7 @@ int mqtt3_handle_subscribe(struct mosquitto_db *db, struct mosquitto *context)
 				sub = sub_mount;
 
 			}
-			_mosquitto_log_printf(NULL, MOSQ_LOG_DEBUG, "\t%s (QoS %d)", sub, qos);
+			//_mosquitto_log_printf(NULL, MOSQ_LOG_DEBUG, "\t%s (QoS %d)", sub, qos);
 
 #if 0
 			/* FIXME
@@ -717,7 +719,7 @@ int mqtt3_handle_subscribe(struct mosquitto_db *db, struct mosquitto *context)
 				}else if(rc2 != -1){
 					rc = rc2;
 				}
-				_mosquitto_log_printf(NULL, MOSQ_LOG_SUBSCRIBE, "%s %d %s", context->id, qos, sub);
+				_mosquitto_log_printf(NULL, MOSQ_LOG_SUBSCRIBE, "Client %s subscribed to topic: %s (QoS:%d)", context->id, sub, qos);
 			}
 			_mosquitto_free(sub);
 
@@ -756,7 +758,7 @@ int mqtt3_handle_unsubscribe(struct mosquitto_db *db, struct mosquitto *context)
 	char *sub;
 
 	if(!context) return MOSQ_ERR_INVAL;
-	_mosquitto_log_printf(NULL, MOSQ_LOG_DEBUG, "Received UNSUBSCRIBE from %s", context->id);
+	//_mosquitto_log_printf(NULL, MOSQ_LOG_DEBUG, "Received UNSUBSCRIBE from %s", context->id);
 
 	if(context->protocol == mosq_p_mqtt311){
 		if((context->in_packet.command&0x0F) != 0x02){
@@ -785,9 +787,9 @@ int mqtt3_handle_unsubscribe(struct mosquitto_db *db, struct mosquitto *context)
 				return 1;
 			}
 
-			_mosquitto_log_printf(NULL, MOSQ_LOG_DEBUG, "\t%s", sub);
+			//_mosquitto_log_printf(NULL, MOSQ_LOG_DEBUG, "\t%s", sub);
 			mqtt3_sub_remove(db, context, sub, &db->subs);
-			_mosquitto_log_printf(NULL, MOSQ_LOG_UNSUBSCRIBE, "%s %s", context->id, sub);
+			_mosquitto_log_printf(NULL, MOSQ_LOG_UNSUBSCRIBE, "UNSUBSCRIBE from client received %s: %s", context->id, sub);
 			_mosquitto_free(sub);
 		}
 	}

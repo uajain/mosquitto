@@ -213,7 +213,9 @@ int _mosquitto_log_vprintf(struct mosquitto *mosq, int priority, const char *fmt
 		}
 		if(log_destinations & MQTT3_LOG_FILE && int_db.config->log_fptr){
 			if(int_db.config && int_db.config->log_timestamp){
-				fprintf(int_db.config->log_fptr, "%d: %s\n", (int)now, s);
+				char *time_readable = asctime(gmtime(&now));
+				time_readable[strlen(time_readable)-1] = '\0';
+				fprintf(int_db.config->log_fptr, "%s : %s\n", time_readable, s);
 			}else{
 				fprintf(int_db.config->log_fptr, "%s\n", s);
 			}

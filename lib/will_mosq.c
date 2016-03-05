@@ -16,7 +16,6 @@ Contributors:
 
 #include <stdio.h>
 #include <string.h>
-
 #include <mosquitto_internal.h>
 #include <memory_mosq.h>
 #include <mqtt3_protocol.h>
@@ -67,7 +66,6 @@ int _mosquitto_will_set(struct mosquitto *mosq, const char *topic, int payloadle
 	}
 	mosq->will->qos = qos;
 	mosq->will->retain = retain;
-
 	return MOSQ_ERR_SUCCESS;
 
 cleanup:

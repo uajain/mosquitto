@@ -40,7 +40,7 @@ int _mosquitto_send_pingreq(struct mosquitto *mosq)
 	int rc;
 	assert(mosq);
 #ifdef WITH_BROKER
-	_mosquitto_log_printf(NULL, MOSQ_LOG_DEBUG, "Sending PINGREQ to %s", mosq->id);
+	//_mosquitto_log_printf(NULL, MOSQ_LOG_DEBUG, "Sending PINGREQ to %s", mosq->id);
 #else
 	_mosquitto_log_printf(mosq, MOSQ_LOG_DEBUG, "Client %s sending PINGREQ", mosq->id);
 #endif
@@ -54,7 +54,7 @@ int _mosquitto_send_pingreq(struct mosquitto *mosq)
 int _mosquitto_send_pingresp(struct mosquitto *mosq)
 {
 #ifdef WITH_BROKER
-	if(mosq) _mosquitto_log_printf(NULL, MOSQ_LOG_DEBUG, "Sending PINGRESP to %s", mosq->id);
+	//if(mosq) _mosquitto_log_printf(NULL, MOSQ_LOG_DEBUG, "Sending PINGRESP to %s", mosq->id);
 #else
 	if(mosq) _mosquitto_log_printf(mosq, MOSQ_LOG_DEBUG, "Client %s sending PINGRESP", mosq->id);
 #endif
@@ -64,7 +64,7 @@ int _mosquitto_send_pingresp(struct mosquitto *mosq)
 int _mosquitto_send_puback(struct mosquitto *mosq, uint16_t mid)
 {
 #ifdef WITH_BROKER
-	if(mosq) _mosquitto_log_printf(NULL, MOSQ_LOG_DEBUG, "Sending PUBACK to %s (Mid: %d)", mosq->id, mid);
+	//if(mosq) _mosquitto_log_printf(NULL, MOSQ_LOG_DEBUG, "Sending PUBACK to %s (Mid: %d)", mosq->id, mid);
 #else
 	if(mosq) _mosquitto_log_printf(mosq, MOSQ_LOG_DEBUG, "Client %s sending PUBACK (Mid: %d)", mosq->id, mid);
 #endif
@@ -74,7 +74,7 @@ int _mosquitto_send_puback(struct mosquitto *mosq, uint16_t mid)
 int _mosquitto_send_pubcomp(struct mosquitto *mosq, uint16_t mid)
 {
 #ifdef WITH_BROKER
-	if(mosq) _mosquitto_log_printf(NULL, MOSQ_LOG_DEBUG, "Sending PUBCOMP to %s (Mid: %d)", mosq->id, mid);
+	//if(mosq) _mosquitto_log_printf(NULL, MOSQ_LOG_DEBUG, "Sending PUBCOMP to %s (Mid: %d)", mosq->id, mid);
 #else
 	if(mosq) _mosquitto_log_printf(mosq, MOSQ_LOG_DEBUG, "Client %s sending PUBCOMP (Mid: %d)", mosq->id, mid);
 #endif
@@ -153,7 +153,7 @@ int _mosquitto_send_publish(struct mosquitto *mosq, uint16_t mid, const char *to
 						_mosquitto_free(mapped_topic);
 						mapped_topic = topic_temp;
 					}
-					_mosquitto_log_printf(NULL, MOSQ_LOG_DEBUG, "Sending PUBLISH to %s (d%d, q%d, r%d, m%d, '%s', ... (%ld bytes))", mosq->id, dup, qos, retain, mid, mapped_topic, (long)payloadlen);
+					_mosquitto_log_printf(NULL, MOSQ_LOG_DEBUG, "Broker publishing to client %s on topic:'%s' (duplicate:%s, QoS:%d, retain:%s, msg_id:%d, (%ld bytes))", mosq->id, mapped_topic, dup?"true":"false", qos, retain?"true":"false", mid);
 #ifdef WITH_SYS_TREE
 					g_pub_bytes_sent += payloadlen;
 #endif
@@ -165,7 +165,10 @@ int _mosquitto_send_publish(struct mosquitto *mosq, uint16_t mid, const char *to
 		}
 	}
 #endif
-	_mosquitto_log_printf(NULL, MOSQ_LOG_DEBUG, "Sending PUBLISH to %s (d%d, q%d, r%d, m%d, '%s', ... (%ld bytes))", mosq->id, dup, qos, retain, mid, topic, (long)payloadlen);
+	/*TODO: Remove garbage from payload if you want in log.*/
+	// printf("%s\n", (char *) payload );
+	// _mosquitto_log_printf(NULL, MOSQ_LOG_DEBUG, "Sending PUBLISH to subscriber %s (duplicate:%s, QoS:%d, retain:%s, mid:%d, '%s', %s (%ld bytes))", mosq->id, dup?"true":"false", qos, retain?"true":"false", mid, topic, payload, (long)payloadlen);
+	_mosquitto_log_printf(NULL, MOSQ_LOG_DEBUG, "Broker publishing to client %s on topic:'%s' (duplicate:%s, QoS:%d, retain:%s, msg_id:%d)", mosq->id, topic, dup?"true":"false", qos, retain?"true":"false", mid);
 #  ifdef WITH_SYS_TREE
 	g_pub_bytes_sent += payloadlen;
 #  endif
