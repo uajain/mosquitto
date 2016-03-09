@@ -121,7 +121,10 @@ int mosquitto_main_loop(struct mosquitto_db *db, mosq_sock_t *listensock, int li
 	sigemptyset(&sigblock);
 	sigaddset(&sigblock, SIGINT);
 #endif
-
+	now_time = time(NULL);
+	struct tm tm = *localtime(&now_time);
+	int earlier_date = tm.tm_mday;
+	printf("Current date is : %d\n", tm.tm_mday);
 	if(db->config->persistent_client_expiration > 0){
 		expiration_check_time = time(NULL) + 3600;
 	}
@@ -158,7 +161,49 @@ int mosquitto_main_loop(struct mosquitto_db *db, mosq_sock_t *listensock, int li
 			pollfd_index++;
 		}
 
+		//code for changing the file pointer for logrotate
 		now_time = time(NULL);
+		struct tm tm = *localtime(&now_time);
+		if (earlier_date != tm.tm_mday)
+		{
+			/* We cannot use logrotate because:
+			 * The file pointer of newly created log file is not changed, therefore mosquitto
+			 * keeps appending logs to earlier log file only.
+			 * Loss of logs in copytruncate (See man pages)
+			 */
+			printf ("Date changed : %d\n", tm.tm_mday);
+			earlier_date = tm.tm_mday;
+
+			char *date = malloc (15 * sizeof (char));
+
+			/*File renaming logic*/
+			if (tm.tm_mon > 9)
+				snprintf(date, 15*sizeof (char), ".%d%d%d", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday);
+			else
+				snprintf(date, 15*sizeof (char), ".%d0%d%d", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday);
+
+			printf("The date that is going to be printed is : %s\n", date);
+			char *archive_file;
+			if ((archive_file = malloc(strlen(db->config->log_file)+strlen(date)+1)) != NULL)
+			{
+			    archive_file[0] = '\0';   // ensures the memory is an empty string
+			    strcat(archive_file, db->config->log_file);
+			    strcat(archive_file, date);
+			    archive_file[strlen(archive_file)] = '\0';
+			    printf("Log file name(current) : %s\n", db->config->log_file);
+			    printf("Archive file name(new) : %s\n", archive_file);
+			}
+
+			/*Rename the current log file so that it becomes the archive file
+			 *Move the file pointer to the newly created log file
+			 */
+		   if(!rename(db->config->log_file, archive_file))
+		   {
+		      printf("File renamed successfully\n");
+		      fclose(db->config->log_fptr);
+			  db->config->log_fptr = _mosquitto_fopen(db->config->log_file, "at");
+		   }
+		}
 
 		time_count = 0;
 		HASH_ITER(hh_sock, db->contexts_by_sock, context, ctxt_tmp){

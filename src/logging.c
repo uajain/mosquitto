@@ -53,7 +53,6 @@ static int log_priorities = MOSQ_LOG_ERR | MOSQ_LOG_WARNING | MOSQ_LOG_NOTICE | 
 int mqtt3_log_init(struct mqtt3_config *config)
 {
 	int rc = 0;
-
 	log_priorities = config->log_type;
 	log_destinations = config->log_dest;
 
@@ -212,13 +211,18 @@ int _mosquitto_log_vprintf(struct mosquitto *mosq, int priority, const char *fmt
 			fflush(stderr);
 		}
 		if(log_destinations & MQTT3_LOG_FILE && int_db.config->log_fptr){
-			if(int_db.config && int_db.config->log_timestamp){
+
+		  //TODO: free the char pointers here
+		  if(int_db.config && int_db.config->log_timestamp){
+
 				char *time_readable = asctime(gmtime(&now));
 				time_readable[strlen(time_readable)-1] = '\0';
 				fprintf(int_db.config->log_fptr, "%s : %s\n", time_readable, s);
+				//free (time_readable);
 			}else{
 				fprintf(int_db.config->log_fptr, "%s\n", s);
 			}
+
 			if(now - last_flush > 1){
 				fflush(int_db.config->log_fptr);
 				last_flush = now;

@@ -146,7 +146,7 @@ int restore_privileges(void)
 		rc = seteuid(0);
 		if(rc == -1){
 			strerror_r(errno, err, 256);
-			_mosquitto_log_printf(NULL, MOSQ_LOG_ERR, "Error setting uid whilst restoring privileges: %s.", err);
+						_mosquitto_log_printf(NULL, MOSQ_LOG_ERR, "Error setting uid whilst restoring privileges: %s.", err);
 			return 1;
 		}
 	}
