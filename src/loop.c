@@ -170,16 +170,36 @@ int mosquitto_main_loop(struct mosquitto_db *db, mosq_sock_t *listensock, int li
 			 * keeps appending logs to earlier log file only.
 			 * Loss of logs in copytruncate (See man pages)
 			 */
-			earlier_date = tm.tm_mday;
 
 			char *date = malloc (15 * sizeof (char));
 
 			/*File renaming logic*/
-			if (tm.tm_mon > 9)
-				snprintf(date, 15*sizeof (char), ".%d%d%d", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday);
-			else
-				snprintf(date, 15*sizeof (char), ".%d0%d%d", tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday);
+			if ((tm.tm_mon + 1) > 9) // tm.tm_mon + 1 = current month
+			{
+				if ((tm.tm_mday == 1) && (tm.tm_mon != 1))
+				{	//earlier date may be 30 or 31
+					snprintf(date, 15*sizeof (char), ".%d%d%d", tm.tm_year + 1900, tm.tm_mon, earlier_date);
+				}
 
+				else if (((tm.tm_mday == 1) && (tm.tm_mon == 1)))
+					snprintf(date, 15*sizeof (char), ".%d%d%d", tm.tm_year + 1899, 12, 31);
+
+				else
+					snprintf(date, 15*sizeof (char), ".%d%d%d", tm.tm_year + 1900, tm.tm_mon + 1, earlier_date);
+			}
+
+			else
+			{
+				if ((tm.tm_mday == 1) && (tm.tm_mon != 1))
+				{	//earlier date may be 30 or 31
+					snprintf(date, 15*sizeof (char), ".%d0%d%d", tm.tm_year + 1900, tm.tm_mon, earlier_date);
+				}
+				else if (((tm.tm_mday == 1) && (tm.tm_mon == 1)))
+					snprintf(date, 15*sizeof (char), ".%d0%d%d", tm.tm_year + 1899, 12, 31);
+
+				else
+					snprintf(date, 15*sizeof (char), ".%d0%d%d", tm.tm_year + 1900, tm.tm_mon + 1, earlier_date);
+			}
 			char *archive_file;
 			if ((archive_file = malloc(strlen(db->config->log_file)+strlen(date)+1)) != NULL)
 			{
@@ -197,6 +217,8 @@ int mosquitto_main_loop(struct mosquitto_db *db, mosq_sock_t *listensock, int li
 		      fclose(db->config->log_fptr);
 			  db->config->log_fptr = _mosquitto_fopen(db->config->log_file, "at");
 		   }
+
+		   earlier_date = tm.tm_mday;
 		}
 
 		time_count = 0;
