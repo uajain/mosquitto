@@ -215,11 +215,16 @@ int _mosquitto_log_vprintf(struct mosquitto *mosq, int priority, const char *fmt
 		  //TODO: free the char pointers here
 		  if(int_db.config && int_db.config->log_timestamp){
 
-				char *time_readable = asctime(gmtime(&now));
-				time_readable[strlen(time_readable)-1] = '\0';
+				struct tm * time_info;
+				char time_readable[50];
+
+				time_info = localtime(&now);
+				strftime(time_readable, sizeof(time_readable), "%c", time_info);
+
 				fprintf(int_db.config->log_fptr, "%s : %s\n", time_readable, s);
-				//free (time_readable);
-			}else{
+			}
+			else
+			{
 				fprintf(int_db.config->log_fptr, "%s\n", s);
 			}
 
