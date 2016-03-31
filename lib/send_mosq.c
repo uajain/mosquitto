@@ -153,7 +153,7 @@ int _mosquitto_send_publish(struct mosquitto *mosq, uint16_t mid, const char *to
 						_mosquitto_free(mapped_topic);
 						mapped_topic = topic_temp;
 					}
-					_mosquitto_log_printf(NULL, MOSQ_LOG_DEBUG, "Broker publishing to client %s on topic:'%s' (duplicate:%s, QoS:%d, retain:%s, msg_id:%d, (%ld bytes))", mosq->id, mapped_topic, dup?"true":"false", qos, retain?"true":"false", mid);
+					// _mosquitto_log_printf(NULL, MOSQ_LOG_DEBUG, "Broker publishing to client %s on topic:'%s' (duplicate:%s, QoS:%d, retain:%s, msg_id:%d, (%ld bytes))", mosq->id, mapped_topic, dup?"true":"false", qos, retain?"true":"false", mid);
 #ifdef WITH_SYS_TREE
 					g_pub_bytes_sent += payloadlen;
 #endif
@@ -168,7 +168,7 @@ int _mosquitto_send_publish(struct mosquitto *mosq, uint16_t mid, const char *to
 	/*TODO: Remove garbage from payload if you want in log.*/
 	// printf("%s\n", (char *) payload );
 	// _mosquitto_log_printf(NULL, MOSQ_LOG_DEBUG, "Sending PUBLISH to subscriber %s (duplicate:%s, QoS:%d, retain:%s, mid:%d, '%s', %s (%ld bytes))", mosq->id, dup?"true":"false", qos, retain?"true":"false", mid, topic, payload, (long)payloadlen);
-	_mosquitto_log_printf(NULL, MOSQ_LOG_DEBUG, "Broker publishing to client %s on topic:'%s' (duplicate:%s, QoS:%d, retain:%s, msg_id:%d)", mosq->id, topic, dup?"true":"false", qos, retain?"true":"false", mid);
+	// _mosquitto_log_printf(NULL, MOSQ_LOG_DEBUG, "Broker publishing to client %s on topic:'%s' (duplicate:%s, QoS:%d, retain:%s, msg_id:%d)", mosq->id, topic, dup?"true":"false", qos, retain?"true":"false", mid);
 #  ifdef WITH_SYS_TREE
 	g_pub_bytes_sent += payloadlen;
 #  endif

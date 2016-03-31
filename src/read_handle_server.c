@@ -520,9 +520,9 @@ int mqtt3_handle_connect(struct mosquitto_db *db, struct mosquitto *context)
 			}
 		}else{
 			if(context->username){
-				_mosquitto_log_printf(NULL, MOSQ_LOG_NOTICE, "New client connected from %s:%d as %s (clean-session:%s, keep-alive:%s, username:'%s').", context->address, context->listener->port, client_id, clean_session?"true":"false", context->keepalive?"true":"false", context->username);
+				_mosquitto_log_printf(NULL, MOSQ_LOG_NOTICE, "Client %s connected from %s:%d (clean-session:%s, keep-alive:%s, username:'%s').", client_id, context->address, context->listener->port, clean_session?"true":"false", context->keepalive?"true":"false", context->username);
 			}else{
-				_mosquitto_log_printf(NULL, MOSQ_LOG_NOTICE, "New client connected from %s:%d as %s (clean-session:%s, keep-alive:%s).", context->address, context->listener->port, client_id, clean_session?"true":"false", context->keepalive?"true":"false");
+				_mosquitto_log_printf(NULL, MOSQ_LOG_NOTICE, "Client %s connected from %s:%d (clean-session:%s, keep-alive:%s).", client_id, context->address, context->listener->port, clean_session?"true":"false", context->keepalive?"true":"false");
 			}
 		}
 	}
@@ -719,7 +719,7 @@ int mqtt3_handle_subscribe(struct mosquitto_db *db, struct mosquitto *context)
 				}else if(rc2 != -1){
 					rc = rc2;
 				}
-				_mosquitto_log_printf(NULL, MOSQ_LOG_SUBSCRIBE, "Client %s subscribed to topic: %s (QoS:%d)", context->id, sub, qos);
+				_mosquitto_log_printf(NULL, MOSQ_LOG_SUBSCRIBE, "Subscribe from client %s received: %s QoS:%d", context->id, sub, qos);
 			}
 			_mosquitto_free(sub);
 

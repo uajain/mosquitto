@@ -215,7 +215,7 @@ int mqtt3_handle_publish(struct mosquitto_db *db, struct mosquitto *context)
 	}
 
 	//_mosquitto_log_printf(NULL, MOSQ_LOG_DEBUG, "Received PUBLISH from %s (d%d, q%d, r%d, m%d, '%s', ... (%ld bytes))", context->id, dup, qos, retain, mid, topic, (long)payloadlen);
-	_mosquitto_log_printf(NULL, MOSQ_LOG_DEBUG, "Client %s published a message to topic: \"%s\" message:\"%s\" (QoS: %d, retained: %s)", context->id, topic, (char *)payload, qos, retain?"true":"false");
+	_mosquitto_log_printf(NULL, MOSQ_LOG_DEBUG, "Client %s sent a message to topic: \"%s\" message:\"%s\" (QoS: %d, retained: %s)", context->id, topic, (char *)payload, qos, retain?"true":"false");
 	if(qos > 0){
 		mqtt3_db_message_store_find(context, mid, &stored);
 	}
