@@ -219,7 +219,7 @@ int _mosquitto_log_vprintf(struct mosquitto *mosq, int priority, const char *fmt
 				char time_readable[50];
 
 				time_info = localtime(&now);
-				strftime(time_readable, sizeof(time_readable), "%c", time_info);
+				strftime(time_readable, sizeof(time_readable), "%Y/%m/%d-%H:%M:%S", time_info);
 
 				fprintf(int_db.config->log_fptr, "%s : %s\n", time_readable, s);
 			}
